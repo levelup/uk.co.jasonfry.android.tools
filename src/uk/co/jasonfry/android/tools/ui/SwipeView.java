@@ -106,14 +106,22 @@ public class SwipeView extends HorizontalScrollView
 		super.setOnTouchListener(mSwipeOnTouchListener);
 	}
 	
+	/* (non-Javadoc)
+	 * @see android.view.ViewGroup#findFocus()
+	 */
+	@Override
+	public View findFocus() {
+		return mLinearLayout.getChildAt(mCurrentPage);
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
+	/*@Override
 	public boolean onTrackballEvent(MotionEvent event)
 	{
 		return true;
-	}
+	}* /
 	
 	@Override
 	protected boolean onRequestFocusInDescendants(int direction, Rect previouslyFocusedRect)
@@ -127,7 +135,7 @@ public class SwipeView extends HorizontalScrollView
 	{
 		//this will now pass trackball events down to onRequestFocusInDescendants
 		requestFocus();
-	}
+	}*/
 	
 	/**
 	 * {@inheritDoc}
