@@ -24,14 +24,11 @@ package uk.co.jasonfry.android.tools.ui;
 
 import uk.co.jasonfry.android.tools.ui.PageControl.OnPageControlClickListener;
 import android.content.Context;
-import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
@@ -42,7 +39,6 @@ public class SwipeView extends HorizontalScrollView
 	
 	private LinearLayout mLinearLayout;
 	private Context mContext;
-	private int SCREEN_WIDTH;
 	private int mMotionStartX;
 	private int mMotionStartY;
 	private boolean mMostlyScrollingInX = false;
@@ -50,7 +46,6 @@ public class SwipeView extends HorizontalScrollView
 	private boolean mJustInterceptedAndIgnored = false;
 	protected boolean mCallScrollToPageInOnLayout = false;
 	private int mCurrentPage = 0;
-	private int mPageWidth = 0;
 	private OnPageChangedListener mOnPageChangedListener = null;
 	private SwipeOnTouchListener mSwipeOnTouchListener;
 	private boolean swipeEnabled = true;
@@ -98,9 +93,6 @@ public class SwipeView extends HorizontalScrollView
 		setHorizontalFadingEdgeEnabled(false);
 		setHorizontalScrollBarEnabled(false);
 		
-		Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay(); 
-		SCREEN_WIDTH = (int) (display.getWidth());
-		mPageWidth = SCREEN_WIDTH;
 		mCurrentPage = 0;
 		
 		mSwipeOnTouchListener = new SwipeOnTouchListener();
@@ -115,29 +107,6 @@ public class SwipeView extends HorizontalScrollView
 		return mLinearLayout.getChildAt(mCurrentPage);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	/*@Override
-	public boolean onTrackballEvent(MotionEvent event)
-	{
-		return true;
-	}* /
-	
-	@Override
-	protected boolean onRequestFocusInDescendants(int direction, Rect previouslyFocusedRect)
-	{
-		//this will now pass trackball events down to onTrackballEvent
-		return false;
-	}
-
-	@Override
-    public void requestChildFocus(View child, View focused)
-	{
-		//this will now pass trackball events down to onRequestFocusInDescendants
-		requestFocus();
-	}*/
-	
 	/**
 	 * {@inheritDoc}
 	 */
@@ -156,12 +125,12 @@ public class SwipeView extends HorizontalScrollView
 		ViewGroup.LayoutParams params;
 		if(child.getLayoutParams()==null)
 		{
-			params = new LayoutParams(mPageWidth, LayoutParams.FILL_PARENT);
+			params = new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT);
 		}
 		else
 		{
 			params = child.getLayoutParams();
-			params.width = mPageWidth;
+			params.width = LayoutParams.FILL_PARENT;
 		}
 		this.addView(child, index, params);
 	}
@@ -172,7 +141,7 @@ public class SwipeView extends HorizontalScrollView
 	@Override
 	public void addView (View child, ViewGroup.LayoutParams params)
 	{
-		params.width = mPageWidth;
+		params.width = LayoutParams.FILL_PARENT;
 		this.addView (child, -1, params);
 	}
 	
@@ -296,11 +265,11 @@ public class SwipeView extends HorizontalScrollView
 		
 		if(smooth)
 		{
-			smoothScrollTo(page*mPageWidth,0);
+			smoothScrollTo(page*getMeasuredWidth(),0);
 		}
 		else
 		{
-			scrollTo(page*mPageWidth,0);
+			scrollTo(page*getMeasuredWidth(),0);
 		}
 		mCurrentPage = page;
 		
@@ -314,44 +283,6 @@ public class SwipeView extends HorizontalScrollView
 		}
 		
 		mCallScrollToPageInOnLayout=!mCallScrollToPageInOnLayout;
-	}
-	
-	/**
-	 * Set the width of each page. This function returns an integer that should be added to the left margin of 
-	 * the first child and the right margin of the last child. This enables all the children to appear to be 
-	 * central
-	 * 
-	 * @param pageWidth The width you wish to assign for each page
-	 * @return An integer to add to the left margin of the first child and the right margin of the last child
-	 */
-	public int setPageWidth(int pageWidth)
-	{
-		mPageWidth = pageWidth;
-		return (SCREEN_WIDTH - mPageWidth)/2;
-	}
-	
-	/**
-	 * Set the width of each page by using the layout parameters of a child. Call this function before you add
-	 * the child to the SwipeView to maintain the child's size. This function returns an integer that should 
-	 * be added to the left margin of the first child and the right margin of the last child. This enables all
-	 * the children to appear to be central
-	 * 
-	 * @param childLayoutParams A child view that you have added / will add to the SwipeView
-	 * @return An integer to add to the left margin of the first child and the right margin of the last child
-	 */
-	public int calculatePageSize(MarginLayoutParams childLayoutParams) 
-	{
-		return setPageWidth(childLayoutParams.leftMargin + childLayoutParams.width + childLayoutParams.rightMargin);
-	}
-	
-	/**
-	 * Return the current width of each page
-	 * 
-	 * @return Returns the width of each page
-	 */
-	public int getPageWidth()
-	{
-		return mPageWidth;
 	}
 	
 	/**
@@ -567,73 +498,101 @@ public class SwipeView extends HorizontalScrollView
 			}
 			return false;
 		}
-		
+
 		private boolean actionUp(MotionEvent event)
 		{
 			float fingerUpPosition = getScrollX();
-            float numberOfPages = mLinearLayout.getMeasuredWidth() / mPageWidth;
-            float fingerUpPage = fingerUpPosition/mPageWidth;
-            float edgePosition = 0;
-            
-            if(mPreviousDirection == 1) //forwards
-            {
-            	if(mDistanceX > DEFAULT_SWIPE_THRESHOLD)//if over then go forwards
-                {
-            		if(mCurrentPage<(numberOfPages-1))//if not at the end of the pages, you don't want to try and advance into nothing!
-                	{
-                		edgePosition = (int)(fingerUpPage+1)*mPageWidth;
-                	}
-                	else
-                	{
-                		edgePosition = (int)(mCurrentPage)*mPageWidth;
-                	}
-                }
-                else //return to start position
-                {
-                	if(Math.round(fingerUpPage)==numberOfPages-1)//if at the end
-                	{
-                		//need to correct for when user starts to scroll into 
-                		//nothing then pulls it back a bit, this becomes a 
-                		//kind of forwards scroll instead
-                		edgePosition = (int)(fingerUpPage+1)*mPageWidth;
-                	}
-                	else //carry on as normal
-                	{
-                		edgePosition = mCurrentPage*mPageWidth;
-                	}
-                }
-            	
-            }
-            else //backwards
-            {
-            	if(mDistanceX < -DEFAULT_SWIPE_THRESHOLD)//go backwards
-                {
-            		edgePosition = (int)(fingerUpPage)*mPageWidth;
-                }
-                else //return to start position
-                {
-                	if(Math.round(fingerUpPage)==0)//if at beginning, correct
-                	{
-                		//need to correct for when user starts to scroll into 
-                		//nothing then pulls it back a bit, this becomes a 
-                		//kind of backwards scroll instead
-                		edgePosition = (int)(fingerUpPage)*mPageWidth;
-                	}
-                	else //carry on as normal
-                	{
-                		edgePosition = mCurrentPage*mPageWidth;
-                	}
-                	
-                }
-            }
-            
-            smoothScrollToPage((int)edgePosition/mPageWidth);
-            mFirstMotionEvent = true;
+			float numberOfPages = mLinearLayout.getChildCount();
+			float pageWidth = getMeasuredWidth();
+			float fingerUpPage = fingerUpPosition/pageWidth;
+			float edgePosition = 0;
+
+			if(mPreviousDirection == 1) //forwards
+			{
+				if(mDistanceX > DEFAULT_SWIPE_THRESHOLD)//if over then go forwards
+				{
+					if(mCurrentPage<(numberOfPages-1))//if not at the end of the pages, you don't want to try and advance into nothing!
+					{
+						edgePosition = (int)(fingerUpPage+1)*pageWidth;
+					}
+					else
+					{
+						edgePosition = (int)(mCurrentPage)*pageWidth;
+					}
+				}
+				else //return to start position
+				{
+					if(Math.round(fingerUpPage)==numberOfPages-1)//if at the end
+					{
+						//need to correct for when user starts to scroll into 
+						//nothing then pulls it back a bit, this becomes a 
+						//kind of forwards scroll instead
+						edgePosition = (int)(fingerUpPage+1)*pageWidth;
+					}
+					else //carry on as normal
+					{
+						edgePosition = mCurrentPage*pageWidth;
+					}
+				}
+
+			}
+			else //backwards
+			{
+				if(mDistanceX < -DEFAULT_SWIPE_THRESHOLD)//go backwards
+				{
+					edgePosition = (int)(fingerUpPage)*pageWidth;
+				}
+				else //return to start position
+				{
+					if(Math.round(fingerUpPage)==0)//if at beginning, correct
+					{
+						//need to correct for when user starts to scroll into 
+						//nothing then pulls it back a bit, this becomes a 
+						//kind of backwards scroll instead
+						edgePosition = (int)(fingerUpPage)*pageWidth;
+					}
+					else //carry on as normal
+					{
+						edgePosition = mCurrentPage*pageWidth;
+					}
+
+				}
+			}
+
+			smoothScrollToPage((int)(edgePosition/pageWidth));
+			mFirstMotionEvent = true;
 			mDistanceX = 0;
 			mMostlyScrollingInX = false;
 			mMostlyScrollingInY = false;
-			
+
 			return true;
+		}
+	}
+
+	/* (non-Javadoc)
+	 * @see android.widget.HorizontalScrollView#onMeasure(int, int)
+	 */
+	@Override
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		int oldWidth = getMeasuredWidth();
+		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+		int newWidth = getMeasuredWidth();
+		if (oldWidth != newWidth) {
+			for (int i=0; i<mLinearLayout.getChildCount();++i) {
+				View child = mLinearLayout.getChildAt(i);
+
+				final ViewGroup.LayoutParams params = child.getLayoutParams();
+				params.width = newWidth;
+				params.height = LayoutParams.FILL_PARENT;
+				child.setLayoutParams(params);
+			}
+
+			final ViewGroup.LayoutParams params = mLinearLayout.getLayoutParams();
+			params.width = mLinearLayout.getChildCount() * newWidth;
+			params.height = LayoutParams.FILL_PARENT;
+			mLinearLayout.setLayoutParams(params);
+
+			requestLayout();
 		}
 	}
 
