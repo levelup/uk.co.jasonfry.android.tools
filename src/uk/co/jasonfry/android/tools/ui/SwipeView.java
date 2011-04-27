@@ -53,6 +53,7 @@ public class SwipeView extends HorizontalScrollView
 	private int mPageWidth = 0;
 	private OnPageChangedListener mOnPageChangedListener = null;
 	private SwipeOnTouchListener mSwipeOnTouchListener;
+	private boolean swipeEnabled = true;
 	private View.OnTouchListener mOnTouchListener;
 	private PageControl mPageControl = null;
 
@@ -485,6 +486,9 @@ public class SwipeView extends HorizontalScrollView
 		
 		public boolean onTouch(View v, MotionEvent event) 
 		{
+			if (!swipeEnabled)
+				return true;
+
 			if(mOnTouchListener!=null && !mJustInterceptedAndIgnored || mOnTouchListener!=null && mSendingDummyMotionEvent) //send on touch event to onTouchListener set by an application implementing a SwipeView and setting their own onTouchListener
 			{
 				if(mOnTouchListener.onTouch(v, event))
@@ -631,5 +635,9 @@ public class SwipeView extends HorizontalScrollView
 			
 			return true;
 		}
+	}
+
+	public void setSwipeEnabled(boolean enabled) {
+		swipeEnabled = enabled;
 	}
 }	
