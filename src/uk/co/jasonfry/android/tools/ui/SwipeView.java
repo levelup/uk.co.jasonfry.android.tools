@@ -418,8 +418,12 @@ public class SwipeView extends HorizontalScrollView
 		
 		public boolean onTouch(View v, MotionEvent event) 
 		{
-			if (!swipeEnabled)
+			if (!swipeEnabled) {
+				View passThrough = mLinearLayout.getChildAt(mCurrentPage);
+				if (passThrough!=null)
+					return passThrough.dispatchTouchEvent(event);
 				return true;
+			}
 
 			if(mOnTouchListener!=null && !mJustInterceptedAndIgnored || mOnTouchListener!=null && mSendingDummyMotionEvent) //send on touch event to onTouchListener set by an application implementing a SwipeView and setting their own onTouchListener
 			{
